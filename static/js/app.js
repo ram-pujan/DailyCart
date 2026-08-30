@@ -99,6 +99,52 @@ const DC = {
     div.textContent = str ?? "";
     return div.innerHTML;
   },
+
+  // ---- validation ----
+  validateEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  },
+  validatePhone(phone) {
+    return /^\d{10}$/.test(phone.replace(/\D/g, ""));
+  },
+
+  // ---- formatting ----
+  formatDate(dateStr) {
+    return new Date(dateStr).toLocaleDateString("en-IN", {
+      year: "numeric", month: "short", day: "numeric"
+    });
+  },
+  formatTime(dateStr) {
+    return new Date(dateStr).toLocaleTimeString("en-IN", {
+      hour: "2-digit", minute: "2-digit"
+    });
+  },
+
+  // ---- modal helpers ----
+  showModal(id) {
+    const el = document.getElementById(id);
+    if (el) el.classList.add("show");
+  },
+  hideModal(id) {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove("show");
+  },
+
+  // ---- order status ----
+  isOrderComplete(status) {
+    return ["Delivered", "Returned", "Cancelled"].includes(status);
+  },
+  getStatusStep(status) {
+    const steps = {
+      "Pending": 0,
+      "Confirmed": 1,
+      "Processing": 2,
+      "Shipped": 3,
+      "Out for Delivery": 4,
+      "Delivered": 5
+    };
+    return steps[status] || 0;
+  }
 };
 
 document.addEventListener("DOMContentLoaded", DC.updateCartBadge);

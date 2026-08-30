@@ -74,7 +74,7 @@ CATEGORIES = [
 ]
 
 PRODUCTS = [
-    # slug, name, category, brand, price, sale_price, stock, rating, icon, description
+    # Cricket products
     ("pro-cricket-bat", "Professional Cricket Bat", "cricket", "SS", 3500, 2999, 15, 4.6, "\U0001F3CF",
      "English willow bat tuned for power hitting. Grade 1 willow, mid-swell profile."),
     ("cricket-ball-leather", "Leather Cricket Ball (Red)", "cricket", "Kookaburra", 1200, None, 40, 4.4, "\U0001F534",
@@ -85,24 +85,70 @@ PRODUCTS = [
      "Full-length batting pads with cane inserts for lightweight protection."),
     ("cricket-helmet", "Cricket Helmet", "cricket", "Masuri", 4200, 3699, 6, 4.7, "\u26D1\uFE0F",
      "Steel-grille helmet meeting British safety standards, adjustable fit."),
+    ("cricket-stumps", "Wooden Stumps & Bails Set", "cricket", "Generic", 800, None, 25, 4.3, "\U0001F3CF",
+     "Regulation-size wooden stumps with bails for practice or casual play."),
+    ("cricket-catching-gloves", "Wicket Keeper Gloves", "cricket", "SS", 3200, 2799, 8, 4.5, "\U0001F9E4",
+     "Professional wicket keeper gloves with extra padding and wrist support."),
+    ("cricket-bat-cover", "Bat Cover & Shoulder Strap", "cricket", "Generic", 400, None, 50, 4.2, "\U0001F454",
+     "Protective bag for bat transport with shoulder strap and foam padding."),
+
+    # Football products
     ("football-classic", "Match Football Size 5", "football", "Nivia", 1500, 1299, 25, 4.5, "\u26BD",
      "Hand-stitched size 5 football, FIFA-inspection-ready panel design."),
     ("football-boots", "Football Boots", "football", "Nivia", 2800, 2399, 12, 4.3, "\U0001F45F",
      "Firm-ground studs with a synthetic leather upper for control on the ball."),
     ("football-gloves", "Goalkeeper Gloves", "football", "Nivia", 1400, None, 9, 4.1, "\U0001F9E4",
      "Latex palm gloves with wrist strap for extra grip on saves."),
+    ("football-shin-guards", "Shin Guard Set", "football", "Nivia", 1200, 999, 18, 4.4, "\U0001F9E4",
+     "Lightweight EVA foam shin guards with adjustable straps."),
+    ("football-training-cones", "Training Cones (Set of 10)", "football", "Generic", 600, None, 30, 4.3, "\U0001F340",
+     "Bright red and yellow cones for dribbling drills and agility training."),
+    ("football-ball-pump", "Ball Pump (Manual)", "football", "Generic", 300, None, 40, 4.2, "\U0001F51B",
+     "Hand pump with pressure gauge for maintaining ball inflation."),
+    ("football-training-vest", "Training Bibs (Pack of 6)", "football", "Generic", 900, 799, 20, 4.3, "\U0001F455",
+     "Breathable mesh bibs for team drills and practice sessions."),
+
+    # Badminton products
     ("badminton-racket", "Carbon Fibre Racket", "badminton", "Yonex", 3200, 2799, 14, 4.6, "\U0001F3F8",
      "Full carbon-fibre frame, medium flex, strung and ready to play."),
     ("shuttlecocks", "Feather Shuttlecocks (Tube of 10)", "badminton", "Yonex", 1800, None, 20, 4.4, "\U0001FAB6",
      "Goose-feather shuttles for consistent flight in club play."),
     ("badminton-net", "Badminton Net + Poles Set", "badminton", "Generic", 2200, 1899, 3, 4.0, "\U0001F578\uFE0F",
      "Portable net and pole set for backyard or community-court games."),
+    ("badminton-racket-grip", "Grip Tape (Pack of 3)", "badminton", "Yonex", 600, None, 35, 4.3, "\U0001F39E\uFE0F",
+     "Anti-slip grip tape for improved racket handle control and comfort."),
+    ("badminton-shuttle-plastic", "Plastic Shuttlecocks (Tube of 12)", "badminton", "Generic", 700, None, 45, 4.2, "\U0001FAB6",
+     "Durable nylon shuttles for beginners and training sessions."),
+    ("badminton-wrist-support", "Wrist Support Brace", "badminton", "Generic", 500, 399, 22, 4.3, "\U0001F4A7",
+     "Compression wrist brace to prevent injury during intensive play."),
+    ("badminton-court-marker", "Court Boundary Tape", "badminton", "Generic", 400, None, 25, 4.1, "\U0001F4E6",
+     "High-visibility tape for marking court boundaries in indoor spaces."),
+
+    # Fitness products
     ("resistance-bands", "Resistance Band Set (5-piece)", "fitness", "PowerMax", 1100, 899, 30, 4.3, "\U0001F4AA",
      "Five resistance levels for strength training, mobility and rehab work."),
     ("skipping-rope", "Speed Skipping Rope", "fitness", "PowerMax", 500, None, 50, 4.2, "\U0001FA79",
      "Ball-bearing handles for fast, smooth rotations during cardio sessions."),
     ("yoga-mat", "Yoga & Exercise Mat", "fitness", "Generic", 1300, 1099, 22, 4.5, "\U0001F9D8",
      "6mm non-slip mat, lightweight and easy to roll for home workouts."),
+    ("dumbbell-set", "Adjustable Dumbbell Pair (20kg)", "fitness", "PowerMax", 3500, 2999, 8, 4.6, "\U0001F4AA",
+     "Compact adjustable dumbbells, perfect for home gym training."),
+    ("push-up-stand", "Push-up Stand & Handle", "fitness", "Generic", 800, 649, 16, 4.4, "\U0001F4AA",
+     "Ergonomic push-up bars to reduce wrist strain during exercises."),
+    ("ab-roller", "Ab Wheel Roller", "fitness", "PowerMax", 1200, 999, 18, 4.5, "\U0001F4AA",
+     "Professional-grade ab wheel for core and abdominal strengthening."),
+    ("foam-roller", "Foam Roller (60cm)", "fitness", "Generic", 1500, 1299, 12, 4.4, "\U0001F32B\uFE0F",
+     "High-density foam roller for self-massage and muscle recovery."),
+    ("resistance-loop-bands", "Loop Resistance Bands (Set of 4)", "fitness", "PowerMax", 900, 749, 26, 4.3, "\U0001F4AA",
+     "Heavy-duty loop bands for lower body and glute training."),
+    ("exercise-ball", "Stability Ball 65cm", "fitness", "Generic", 1800, 1499, 10, 4.4, "\U0001F392",
+     "Anti-burst exercise ball for balance, core and rehabilitation exercises."),
+    ("jump-rope-crossfit", "Crossfit Jump Rope", "fitness", "PowerMax", 1100, 899, 15, 4.5, "\U0001FA79",
+     "Weighted jump rope for intense cardio and crossfit training."),
+    ("yoga-blocks", "Yoga Block Pair (Cork)", "fitness", "Generic", 1200, None, 20, 4.3, "\U0001F9D8",
+     "Natural cork blocks to support alignment and deepen stretches."),
+    ("resistance-tube-set", "Resistance Tube Set with Handles", "fitness", "PowerMax", 1400, 1099, 14, 4.4, "\U0001F4AA",
+     "Full-body resistance tubes for strength training and rehab."),
 ]
 
 
