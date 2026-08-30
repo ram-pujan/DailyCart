@@ -9,7 +9,7 @@ import sqlite3
 import os
 import random
 import string
-from datetime import datetime
+from datetime import datetime, timedelta
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "daily_cart.db")
 
@@ -201,6 +201,80 @@ def generate_order_number(conn):
         ).fetchone()
         if not exists:
             return candidate
+
+
+def seed_sample_orders():
+    """Add sample orders for demonstration purposes"""
+    conn = get_conn()
+    existing_orders = conn.execute("SELECT COUNT(*) c FROM orders").fetchone()["c"]
+    if existing_orders > 0:
+        conn.close()
+        return  # Don't reseed if orders already exist
+    
+    # Get some product IDs for the orders
+    products = conn.execute("SELECT id, name, sale_price, price FROM products LIMIT 20").fetchall()
+    if not len(products):
+        conn.close()
+        return
+    
+    # Sample customers
+    customers = [
+        ("Raj Poudel", "9841234567", "raj@example.com", "Bagmati", "Kathmandu", "Kathmandu", "Thamel, Kathmandu"),
+        ("Priya Sharma", "9851234567", "priya@example.com", "Bagmati", "Bhaktapur", "Bhaktapur", "Durbar Square, Bhaktapur"),
+        ("Arjun Gupta", "9861234567", "arjun@example.com", "Gandaki", "Kaski", "Pokhara", "Lakeside, Pokhara"),
+        ("Neha Singh", "9871234567", "neha@example.com", "Bagmati", "Lalitpur", "Lalitpur", "Patan Dhoka, Lalitpur"),
+        ("Vikram Nepal", "9881234567", "vikram@example.com", "Lumbini", "Rupandehi", "Butwal", "Main Street, Butwal"),
+    ]
+    
+    statuses = ["Pending", "Confirmed", "Processing", "Shipped", "Out for Delivery", "Delivered"]
+    
+    for i, (name, phone, email, province, district, city, address) in enumerate(customers):
+        # Create 1-3 orders per customer
+        order_count = random.randint(1, 3)
+        for _ in range(order_count):
+            # Select random products for this order
+            num_items = random.randint(1, 4)
+            order_products = random.sample(products, min(num_items, len(products)))
+            
+            subtotal = 0
+            for prod in order_products:
+                qty = random.randint(1, 3)
+                unit_price = prod["sale_price"] or prod["price"]
+                subtotal += unit_price * qty
+            
+            delivery_fee = 100
+            total = subtotal + delivery_fee
+            order_number = generate_order_number(conn)
+            status = random.choice(statuses)
+            
+            # Create order with date in past 30 days
+            days_ago = random.randint(0, 30)
+            created_at = (datetime.now() - timedelta(days=days_ago)).isoformat()
+            
+            cur = conn.execute(
+                """INSERT INTO orders
+                   (order_number, customer_name, phone, email, province, district, city,
+                    address, payment_method, subtotal, delivery_fee, total, status, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    order_number, name, phone, email, province, district, city, address,
+                    random.choice(["COD", "COD", "COD"]), subtotal, delivery_fee, total, status, created_at
+                ),
+            )
+            order_id = cur.lastrowid
+            
+            # Add order items
+            for prod in order_products:
+                qty = random.randint(1, 3)
+                unit_price = prod["sale_price"] or prod["price"]
+                conn.execute(
+                    """INSERT INTO order_items (order_id, product_id, product_name, unit_price, qty)
+                       VALUES (?, ?, ?, ?, ?)""",
+                    (order_id, prod["id"], prod["name"], unit_price, qty),
+                )
+    
+    conn.commit()
+    conn.close()
 
 
 if __name__ == "__main__":

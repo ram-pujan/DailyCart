@@ -408,11 +408,16 @@ class DailyCartHandler(BaseHTTPRequestHandler):
 
 
 def main():
+    # Auto-initialize database with sample data if it doesn't exist
     db.init_db(reset=False)
+    db.seed_sample_orders()  # Add sample orders for demo
+    
     port = int(os.environ.get("PORT", 8000))
     server = ThreadingHTTPServer(("0.0.0.0", port), DailyCartHandler)
-    print(f"Daily Cart running at http://localhost:{port}")
-    print(f"Admin panel at   http://localhost:{port}/admin  (password: {ADMIN_PASSWORD})")
+    print(f"✓ Daily Cart running at http://localhost:{port}")
+    print(f"✓ Admin panel at   http://localhost:{port}/admin  (password: {ADMIN_PASSWORD})")
+    print(f"✓ Shop at         http://localhost:{port}/shop")
+    print(f"\nDatabase: {db.DB_PATH}")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
