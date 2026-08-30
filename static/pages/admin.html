@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Admin — Daily Cart</title>
+<link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="logo" href="/">Daily<span>Cart</span> <small style="font-size:11px;color:var(--amber);font-weight:600">ADMIN</small></a>
+    <div style="flex:1"></div>
+    <a class="btn btn-outline btn-sm" style="border-color:#fff;color:#fff" href="/" >Exit to site</a>
+  </div>
+</header>
+
+<div id="root"></div>
+
+<script src="/static/js/app.js"></script>
+<script>
+  const STATUSES = ["Pending", "Confirmed", "Processing", "Shipped", "Out for Delivery", "Delivered", "Cancelled", "Returned"];
+  let currentTab = "dashboard";
+
+  function isLoggedIn() {
+    return !!localStorage.getItem(DC.ADMIN_KEY);
+  }
+
+  function renderLogin() {
+    document.getElementById("root").innerHTML = `
+      <div class="login-card">
+        <h2 style="margin-top:0">Admin Login</h2>
+        <form id="login-form">
+          <div class="form-field"><label>Password</label><input type="text" id="password" placeholder="daily123" /></div>
+          <button class="btn btn-primary btn-block" style="margin-top:12px">Log in</button>
+          <div id="login-error" style="color:#d1293d;font-size:13px;margin-top:8px"></div>
+        </form>
+        <p style="font-size:12px;color:var(--ink-soft);margin-top:14px">Prototype auth only — password is <code>daily123</code>. Replace with real admin accounts before launch.</p>
+      </div>`;
+    document.getElementById("login-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const password = document.getElementById("password").value;
+      try {
+        const res = await DC.api("/api/admin/login", { method: "POST", body: { password } });
+        localStorage.setItem(DC.ADMIN_KEY, res.token);
+        renderShell();
+      } catch (err) {
+        document.getElementById("login-error").textContent = "Incorrect password.";
+      }
+    });
+  }
+
+  function renderShell() {
+    document.getElementById("root").innerHTML = `
+      <div class="admin-shell">
+        <aside class="admin-side">
+          <button data-tab="dashboard" class="active">Dashboard</button>
+          <button data-tab="orders">Orders</button>
+          <button data-tab="products">Products</button>
+          <button id="logout-btn" style="color:#ff8a70;margin-top:20px">Log out</button>
+        </aside>
+        <main class="admin-main" id="admin-main"></main>
+      </div>`;
+    document.querySelectorAll(".admin-side button[data-tab]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".admin-side button[data-tab]").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        currentTab = btn.dataset.tab;
+        loadTab();
+      });
+    });
+    document.getElementById("logout-btn").addEventListener("click", () => {
+      localStorage.removeItem(DC.ADMIN_KEY);
+      renderLogin();
+    });
+    loadTab();
+  }
+
+  async function loadTab() {
+    if (currentTab === "dashboard") return loadDashboard();
+    if (currentTab === "orders") return loadOrders();
+    if (currentTab === "products") return loadProducts();
+  }
+
+  async function loadDashboard() {
+    const main = document.getElementById("admin-main");
+    main.innerHTML = `<p>Loading…</p>`;
+    const [orders, products] = await Promise.all([
+      DC.api("/api/admin/orders", { admin: true }),
+      DC.api("/api/admin/products", { admin: true }),
+    ]);
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const todaysSales = orders
+      .filter(o => o.created_at.startsWith(todayStr) && o.status !== "Cancelled")
+      .reduce((s, o) => s + o.total, 0);
+    const recent = orders.slice(0, 6);
+
+    main.innerHTML = `
+      <h2 class="display" style="font-size:22px">Dashboard</h2>
+      <div class="stat-cards">
+        <div class="stat-card"><div class="num">${DC.money(todaysSales)}</div><div class="lbl">Today's Sales</div></div>
+        <div class="stat-card"><div class="num">${orders.length}</div><div class="lbl">Orders</div></div>
+        <div class="stat-card"><div class="num">${products.length}</div><div class="lbl">Products</div></div>
+      </div>
+      <h3>Recent orders</h3>
+      <table class="data-table">
+        <thead><tr><th>Order #</th><th>Customer</th><th>Total</th><th>Status</th></tr></thead>
+        <tbody>
+          ${recent.map(o => `<tr><td>${o.order_number}</td><td>${DC.escapeHtml(o.customer_name)}</td><td>${DC.money(o.total)}</td><td><span class="badge ${o.status}">${o.status}</span></td></tr>`).join("") || `<tr><td colspan="4">No orders yet.</td></tr>`}
+        </tbody>
+      </table>
+    `;
+  }
+
+  async function loadOrders() {
+    const main = document.getElementById("admin-main");
+    main.innerHTML = `<p>Loading…</p>`;
+    const orders = await DC.api("/api/admin/orders", { admin: true });
+    main.innerHTML = `
+      <h2 class="display" style="font-size:22px">Orders</h2>
+      <table class="data-table">
+        <thead><tr><th>Order #</th><th>Customer</th><th>Phone</th><th>Total</th><th>Payment</th><th>Status</th></tr></thead>
+        <tbody>
+          ${orders.map(o => `
+            <tr>
+              <td>${o.order_number}</td>
+              <td>${DC.escapeHtml(o.customer_name)}</td>
+              <td>${DC.escapeHtml(o.phone)}</td>
+              <td>${DC.money(o.total)}</td>
+              <td>${o.payment_method}</td>
+              <td>
+                <select data-id="${o.id}" class="status-select">
+                  ${STATUSES.map(s => `<option value="${s}" ${s === o.status ? "selected" : ""}>${s}</option>`).join("")}
+                </select>
+              </td>
+            </tr>
+          `).join("") || `<tr><td colspan="6">No orders yet.</td></tr>`}
+        </tbody>
+      </table>
+    `;
+    document.querySelectorAll(".status-select").forEach(sel => {
+      sel.addEventListener("change", async () => {
+        try {
+          await DC.api(`/api/admin/orders/${sel.dataset.id}`, { method: "PATCH", body: { status: sel.value }, admin: true });
+          DC.toast("Order status updated");
+        } catch (e) {
+          DC.toast(e.message);
+        }
+      });
+    });
+  }
+
+  async function loadProducts() {
+    const main = document.getElementById("admin-main");
+    main.innerHTML = `<p>Loading…</p>`;
+    const [products, cats] = await Promise.all([
+      DC.api("/api/admin/products", { admin: true }),
+      DC.api("/api/categories"),
+    ]);
+    main.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h2 class="display" style="font-size:22px">Products</h2>
+        <button class="btn btn-primary btn-sm" id="new-product-btn">+ New Product</button>
+      </div>
+      <div id="product-form-holder"></div>
+      <table class="data-table">
+        <thead><tr><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          ${products.map(p => `
+            <tr>
+              <td>${p.icon} ${DC.escapeHtml(p.name)}</td>
+              <td>${p.category_name}</td>
+              <td>${DC.money(p.sale_price || p.price)}</td>
+              <td>${p.stock <= p.low_stock_threshold ? `<span style="color:var(--danger)">${p.stock} ⚠️</span>` : p.stock}</td>
+              <td><span class="badge ${p.status === 'active' ? 'Delivered' : 'Cancelled'}">${p.status}</span></td>
+              <td>
+                <button class="btn btn-outline btn-sm" onclick="toggleStatus(${p.id}, '${p.status}')">${p.status === 'active' ? 'Disable' : 'Enable'}</button>
+              </td>
+            </tr>
+          `).join("") || `<tr><td colspan="6">No products yet.</td></tr>`}
+        </tbody>
+      </table>
+    `;
+    document.getElementById("new-product-btn").addEventListener("click", () => renderProductForm(cats));
+  }
+
+  function renderProductForm(cats) {
+    document.getElementById("product-form-holder").innerHTML = `
+      <div class="summary-card" style="margin-bottom:16px">
+        <h3 style="margin-top:0">New product</h3>
+        <form id="product-form" class="form-grid">
+          <div class="form-field"><label>Name</label><input name="name" required /></div>
+          <div class="form-field"><label>Slug</label><input name="slug" required placeholder="e.g. new-cricket-bat" /></div>
+          <div class="form-field"><label>Category</label>
+            <select name="category_id">${cats.map(c => `<option value="${c.id}">${c.name}</option>`).join("")}</select>
+          </div>
+          <div class="form-field"><label>Brand</label><input name="brand" /></div>
+          <div class="form-field"><label>Price (Rs.)</label><input name="price" type="text" required /></div>
+          <div class="form-field"><label>Sale price (optional)</label><input name="sale_price" type="text" /></div>
+          <div class="form-field"><label>Stock</label><input name="stock" type="text" required /></div>
+          <div class="form-field"><label>Icon (emoji)</label><input name="icon" placeholder="🏏" /></div>
+          <div class="form-field full"><label>Description</label><textarea name="description" rows="2"></textarea></div>
+          <div class="form-field full" style="display:flex;gap:10px">
+            <button class="btn btn-primary" type="submit">Save product</button>
+            <button class="btn btn-outline" type="button" id="cancel-form">Cancel</button>
+          </div>
+        </form>
+      </div>`;
+    document.getElementById("cancel-form").addEventListener("click", () => {
+      document.getElementById("product-form-holder").innerHTML = "";
+    });
+    document.getElementById("product-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const payload = Object.fromEntries(fd.entries());
+      try {
+        await DC.api("/api/admin/products", { method: "POST", body: payload, admin: true });
+        DC.toast("Product created");
+        loadProducts();
+      } catch (err) {
+        DC.toast(err.message);
+      }
+    });
+  }
+
+  async function toggleStatus(id, status) {
+    const newStatus = status === "active" ? "disabled" : "active";
+    await DC.api(`/api/admin/products/${id}`, { method: "PATCH", body: { status: newStatus }, admin: true });
+    loadProducts();
+  }
+
+  isLoggedIn() ? renderShell() : renderLogin();
+</script>
+</body>
+</html>

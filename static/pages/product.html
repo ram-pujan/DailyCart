@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Product — Daily Cart</title>
+<link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="logo" href="/">Daily<span>Cart</span></a>
+    <nav class="nav-links">
+      <a href="/shop">Shop</a>
+      <a href="/shop?category=cricket">Cricket</a>
+      <a href="/shop?category=football">Football</a>
+      <a href="/shop?category=badminton">Badminton</a>
+      <a href="/shop?category=fitness">Fitness</a>
+    </nav>
+    <div class="search-box">
+      <form action="/shop" method="GET"><input type="text" name="q" placeholder="Search cricket bat, football..." /></form>
+    </div>
+    <a class="cart-link" href="/cart">Cart <span class="badge-count" id="cart-count">0</span></a>
+  </div>
+</header>
+
+<div class="wrap" id="pdp-wrap">
+  <div class="pdp" id="pdp"></div>
+</div>
+
+<footer class="site-footer">
+  <div class="wrap"><strong>Daily Cart</strong> — Sports gear, delivered across Nepal.</div>
+</footer>
+
+<script src="/static/js/app.js"></script>
+<script>
+  let currentProduct = null;
+
+  async function init() {
+    const slug = DC.qs("slug");
+    if (!slug) { window.location = "/shop"; return; }
+    let p;
+    try {
+      p = await DC.api(`/api/products/${slug}`);
+    } catch (e) {
+      document.getElementById("pdp").innerHTML = `<div class="empty-state">Product not found.</div>`;
+      return;
+    }
+    currentProduct = p;
+    const onSale = p.sale_price && p.sale_price < p.price;
+    document.title = p.name + " — Daily Cart";
+    document.getElementById("pdp").innerHTML = `
+      <div class="pdp-thumb">${p.icon}</div>
+      <div>
+        <div class="product-cat">${p.category_name} · ${DC.escapeHtml(p.brand || "")}</div>
+        <h1>${DC.escapeHtml(p.name)}</h1>
+        <div class="product-rating">★ ${p.rating.toFixed(1)} rating</div>
+        <div class="price-row" style="margin-top:10px">
+          <span class="price" style="font-size:26px">${DC.money(p.sale_price || p.price)}</span>
+          ${onSale ? `<span class="price-strike">${DC.money(p.price)}</span>` : ""}
+        </div>
+        <div style="margin-top:6px">
+          ${p.stock === 0 ? `<span class="stock-flag low">Out of stock</span>` :
+            (p.stock <= p.low_stock_threshold ? `<span class="stock-flag low">Only ${p.stock} left in stock</span>` : `<span style="color:var(--pitch);font-size:13px;font-weight:700">In stock</span>`)}
+        </div>
+
+        <div class="qty-row">
+          <div class="qty-box">
+            <button onclick="stepQty(-1)">−</button>
+            <input type="text" id="qty" value="1" />
+            <button onclick="stepQty(1)">+</button>
+          </div>
+          <button class="btn btn-primary" id="add-btn" ${p.stock === 0 ? "disabled" : ""} onclick="addAndStay()">Add to Cart</button>
+          <button class="btn btn-dark" id="buy-btn" ${p.stock === 0 ? "disabled" : ""} onclick="buyNow()">Buy Now</button>
+        </div>
+
+        <div class="tabs">
+          <h4>Description</h4>
+          <p>${DC.escapeHtml(p.description)}</p>
+          <h4>Shipping</h4>
+          <p>Delivered across Nepal. Flat Rs. 100 delivery fee, cash on delivery available.</p>
+          <h4>Return policy</h4>
+          <p>7-day return window for unused items in original packaging.</p>
+        </div>
+      </div>
+    `;
+  }
+
+  function stepQty(delta) {
+    const el = document.getElementById("qty");
+    let v = parseInt(el.value, 10) || 1;
+    v = Math.max(1, v + delta);
+    el.value = v;
+  }
+
+  function addAndStay() {
+    const qty = Math.max(1, parseInt(document.getElementById("qty").value, 10) || 1);
+    DC.addToCart(currentProduct, qty);
+    DC.toast("Added to cart");
+  }
+
+  function buyNow() {
+    const qty = Math.max(1, parseInt(document.getElementById("qty").value, 10) || 1);
+    DC.addToCart(currentProduct, qty);
+    window.location = "/checkout";
+  }
+
+  init();
+</script>
+</body>
+</html>

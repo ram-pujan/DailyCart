@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Order — Daily Cart</title>
+<link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="logo" href="/">Daily<span>Cart</span></a>
+    <nav class="nav-links"><a href="/shop">Shop</a></nav>
+    <div style="flex:1"></div>
+    <a class="cart-link" href="/cart">Cart <span class="badge-count" id="cart-count">0</span></a>
+  </div>
+</header>
+
+<section class="section wrap" style="max-width:760px">
+  <div id="order-content"></div>
+</section>
+
+<footer class="site-footer">
+  <div class="wrap"><strong>Daily Cart</strong> — Sports gear, delivered across Nepal.</div>
+</footer>
+
+<script src="/static/js/app.js"></script>
+<script>
+  const STEPS = ["Pending", "Confirmed", "Processing", "Shipped", "Out for Delivery", "Delivered"];
+
+  async function init() {
+    const orderNumber = DC.qs("order");
+    const content = document.getElementById("order-content");
+    if (!orderNumber) {
+      content.innerHTML = `
+        <div class="section-head"><h2>Track an order</h2></div>
+        <form id="lookup-form" style="display:flex;gap:10px">
+          <input type="text" id="order-input" placeholder="e.g. DC-20260830-00125" style="flex:1" />
+          <button class="btn btn-primary">Track</button>
+        </form>`;
+      document.getElementById("lookup-form").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const v = document.getElementById("order-input").value.trim();
+        if (v) window.location = `/order?order=${encodeURIComponent(v)}`;
+      });
+      return;
+    }
+
+    let order;
+    try {
+      order = await DC.api(`/api/orders/${orderNumber}`);
+    } catch (e) {
+      content.innerHTML = `<div class="empty-state">Couldn't find order <strong>${DC.escapeHtml(orderNumber)}</strong>.</div>`;
+      return;
+    }
+
+    const isTerminalOther = ["Cancelled", "Returned"].includes(order.status);
+    const currentIdx = STEPS.indexOf(order.status);
+
+    const ladder = isTerminalOther
+      ? `<div style="margin-top:20px;color:var(--amber);font-weight:700">Status: ${order.status}</div>`
+      : `<div class="status-ladder">
+          ${STEPS.map((s, i) => `
+            <div class="status-step ${i < currentIdx ? "done" : ""} ${i === currentIdx ? "current" : ""}">
+              <div class="dot"></div>
+              <span class="lbl">${s}</span>
+            </div>
+          `).join("")}
+        </div>`;
+
+    content.innerHTML = `
+      <div class="section-head"><h2>Order confirmed 🎉</h2></div>
+      <div class="scoreboard">
+        <div class="label">Order Number</div>
+        <div class="order-number">${order.order_number}</div>
+        <div class="total">${DC.money(order.total)} · ${order.payment_method}</div>
+        ${ladder}
+      </div>
+
+      <div style="margin-top:24px" class="summary-card">
+        <h3 style="margin-top:0">Order details</h3>
+        ${order.items.map(i => `<div class="summary-row"><span>${DC.escapeHtml(i.product_name)} × ${i.qty}</span><span>${DC.money(i.unit_price * i.qty)}</span></div>`).join("")}
+        <div class="summary-row"><span>Subtotal</span><span>${DC.money(order.subtotal)}</span></div>
+        <div class="summary-row"><span>Delivery</span><span>${DC.money(order.delivery_fee)}</span></div>
+        <div class="summary-row total"><span>Total</span><span>${DC.money(order.total)}</span></div>
+      </div>
+
+      <div style="margin-top:20px">
+        <h3>Delivering to</h3>
+        <p>${DC.escapeHtml(order.customer_name)} · ${DC.escapeHtml(order.phone)}<br/>
+        ${DC.escapeHtml(order.address)}${order.city ? ", " + DC.escapeHtml(order.city) : ""}${order.district ? ", " + DC.escapeHtml(order.district) : ""}</p>
+      </div>
+
+      <a class="btn btn-outline" href="/shop">Continue Shopping</a>
+    `;
+  }
+
+  init();
+</script>
+</body>
+</html>

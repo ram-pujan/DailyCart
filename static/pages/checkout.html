@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Checkout — Daily Cart</title>
+<link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="logo" href="/">Daily<span>Cart</span></a>
+    <nav class="nav-links"><a href="/shop">Shop</a></nav>
+    <div style="flex:1"></div>
+    <a class="cart-link" href="/cart">Cart <span class="badge-count" id="cart-count">0</span></a>
+  </div>
+</header>
+
+<section class="section wrap">
+  <div class="section-head"><h2>Checkout</h2></div>
+  <div id="checkout-content"></div>
+</section>
+
+<footer class="site-footer">
+  <div class="wrap"><strong>Daily Cart</strong> — Sports gear, delivered across Nepal.</div>
+</footer>
+
+<script src="/static/js/app.js"></script>
+<script>
+  const DELIVERY_FEE = 100;
+
+  function render() {
+    const cart = DC.getCart();
+    const content = document.getElementById("checkout-content");
+    if (cart.length === 0) {
+      content.innerHTML = `<div class="empty-state">Your cart is empty. <br/><br/><a class="btn btn-primary" href="/shop">Go to Shop</a></div>`;
+      return;
+    }
+    const subtotal = DC.cartSubtotal();
+    const total = subtotal + DELIVERY_FEE;
+
+    content.innerHTML = `
+      <div class="checkout-layout">
+        <form id="checkout-form">
+          <h3 style="margin-top:0">Delivery details</h3>
+          <div class="form-grid">
+            <div class="form-field full"><label>Full name</label><input type="text" name="customer_name" required /></div>
+            <div class="form-field"><label>Phone number</label><input type="tel" name="phone" required /></div>
+            <div class="form-field"><label>Email (optional)</label><input type="email" name="email" /></div>
+            <div class="form-field"><label>Province</label><input type="text" name="province" placeholder="Bagmati" /></div>
+            <div class="form-field"><label>District</label><input type="text" name="district" placeholder="Kathmandu" /></div>
+            <div class="form-field"><label>City / Municipality</label><input type="text" name="city" placeholder="Kathmandu" /></div>
+            <div class="form-field full"><label>Address</label><input type="text" name="address" required placeholder="House no., street, landmark" /></div>
+            <div class="form-field full"><label>Delivery instructions (optional)</label><textarea name="notes" rows="2"></textarea></div>
+          </div>
+
+          <h3>Payment method</h3>
+          <div class="pay-option">
+            <input type="radio" name="payment_method" value="COD" checked style="margin-top:3px" />
+            <div><strong>Cash on Delivery</strong><small>Pay when your order arrives.</small></div>
+          </div>
+          <div class="pay-option disabled">
+            <input type="radio" disabled style="margin-top:3px" />
+            <div><strong>eSewa / Khalti (coming soon)</strong><small>Online payment gateways will be added next.</small></div>
+          </div>
+
+          <button class="btn btn-primary btn-block" type="submit" id="place-order-btn" style="margin-top:16px">Place Order</button>
+          <div id="checkout-error" style="color:#d1293d;font-size:13px;margin-top:8px"></div>
+        </form>
+
+        <div class="summary-card">
+          <h3 style="margin-top:0">Order summary</h3>
+          ${cart.map(i => `<div class="summary-row"><span>${DC.escapeHtml(i.name)} × ${i.qty}</span><span>${DC.money(i.price * i.qty)}</span></div>`).join("")}
+          <div class="summary-row"><span>Subtotal</span><span>${DC.money(subtotal)}</span></div>
+          <div class="summary-row"><span>Delivery</span><span>${DC.money(DELIVERY_FEE)}</span></div>
+          <div class="summary-row total"><span>Total</span><span>${DC.money(total)}</span></div>
+        </div>
+      </div>
+    `;
+
+    document.getElementById("checkout-form").addEventListener("submit", submitOrder);
+  }
+
+  async function submitOrder(e) {
+    e.preventDefault();
+    const form = e.target;
+    const btn = document.getElementById("place-order-btn");
+    const errorEl = document.getElementById("checkout-error");
+    errorEl.textContent = "";
+    btn.disabled = true;
+    btn.textContent = "Placing order…";
+
+    const fd = new FormData(form);
+    const payload = Object.fromEntries(fd.entries());
+    payload.items = DC.getCart().map(i => ({ product_id: i.product_id, qty: i.qty }));
+
+    try {
+      const result = await DC.api("/api/orders", { method: "POST", body: payload });
+      DC.clearCart();
+      window.location = `/order?order=${result.order_number}`;
+    } catch (err) {
+      errorEl.textContent = err.message || "Something went wrong. Please try again.";
+      btn.disabled = false;
+      btn.textContent = "Place Order";
+    }
+  }
+
+  render();
+</script>
+</body>
+</html>

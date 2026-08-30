@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Shop — Daily Cart</title>
+<link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="logo" href="/">Daily<span>Cart</span></a>
+    <nav class="nav-links">
+      <a href="/shop">Shop</a>
+      <a href="/shop?category=cricket">Cricket</a>
+      <a href="/shop?category=football">Football</a>
+      <a href="/shop?category=badminton">Badminton</a>
+      <a href="/shop?category=fitness">Fitness</a>
+    </nav>
+    <div class="search-box">
+      <form action="/shop" method="GET" id="search-form"><input type="text" name="q" id="search-input" placeholder="Search cricket bat, football..." /></form>
+    </div>
+    <a class="cart-link" href="/cart">Cart <span class="badge-count" id="cart-count">0</span></a>
+  </div>
+</header>
+
+<section class="section wrap">
+  <div class="shop-layout">
+    <aside class="filters">
+      <h3>Category</h3>
+      <div class="filter-group" id="cat-filters"></div>
+      <h3>Sort by</h3>
+      <div class="filter-group">
+        <select id="sort-select">
+          <option value="popular">Popular</option>
+          <option value="newest">Newest</option>
+          <option value="price_asc">Price: Low → High</option>
+          <option value="price_desc">Price: High → Low</option>
+        </select>
+      </div>
+    </aside>
+    <main>
+      <div class="toolbar">
+        <div id="result-count" style="font-size:14px;color:var(--ink-soft)"></div>
+      </div>
+      <div class="product-grid" id="grid"></div>
+      <div class="empty-state" id="empty" style="display:none">No products match your filters yet.</div>
+    </main>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="wrap"><strong>Daily Cart</strong> — Sports gear, delivered across Nepal.</div>
+</footer>
+
+<script src="/static/js/app.js"></script>
+<script>
+  function productCard(p) {
+    const onSale = p.sale_price && p.sale_price < p.price;
+    return `
+      <div class="product-card">
+        <a href="/product?slug=${p.slug}"><div class="product-thumb">${p.icon}</div></a>
+        <div class="product-body">
+          <div class="product-cat">${p.category_name}</div>
+          <a href="/product?slug=${p.slug}"><div class="product-name">${DC.escapeHtml(p.name)}</div></a>
+          <div class="product-rating">★ ${p.rating.toFixed(1)}</div>
+          <div class="price-row">
+            <span class="price">${DC.money(p.sale_price || p.price)}</span>
+            ${onSale ? `<span class="price-strike">${DC.money(p.price)}</span>` : ""}
+          </div>
+          ${p.stock <= p.low_stock_threshold && p.stock > 0 ? `<span class="stock-flag low">Only ${p.stock} left</span>` : ""}
+          ${p.stock === 0 ? `<span class="stock-flag low">Out of stock</span>` : ""}
+          <button class="btn btn-primary btn-sm" ${p.stock === 0 ? "disabled" : ""} onclick='DC.addToCart(${JSON.stringify(p)}); DC.toast("Added to cart")'>Add to Cart</button>
+        </div>
+      </div>`;
+  }
+
+  const state = {
+    category: DC.qs("category") || "",
+    q: DC.qs("q") || "",
+    sort: DC.qs("sort") || "popular",
+  };
+  document.getElementById("search-input").value = state.q;
+  document.getElementById("sort-select").value = state.sort;
+
+  async function loadCategories() {
+    const cats = await DC.api("/api/categories");
+    document.getElementById("cat-filters").innerHTML = `
+      <label class="filter-option"><input type="radio" name="cat" value="" ${!state.category ? "checked" : ""}/> All</label>
+      ` + cats.map(c => `
+      <label class="filter-option"><input type="radio" name="cat" value="${c.slug}" ${state.category === c.slug ? "checked" : ""}/> ${c.icon} ${c.name}</label>
+    `).join("");
+    document.querySelectorAll('input[name="cat"]').forEach(r => r.addEventListener("change", (e) => {
+      state.category = e.target.value;
+      loadProducts();
+    }));
+  }
+
+  async function loadProducts() {
+    const params = new URLSearchParams();
+    if (state.category) params.set("category", state.category);
+    if (state.q) params.set("q", state.q);
+    if (state.sort) params.set("sort", state.sort);
+    const products = await DC.api("/api/products?" + params.toString());
+    const grid = document.getElementById("grid");
+    grid.innerHTML = products.map(productCard).join("");
+    document.getElementById("empty").style.display = products.length ? "none" : "block";
+    document.getElementById("result-count").textContent = `${products.length} product${products.length === 1 ? "" : "s"}`;
+  }
+
+  document.getElementById("sort-select").addEventListener("change", (e) => {
+    state.sort = e.target.value;
+    loadProducts();
+  });
+  document.getElementById("search-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    state.q = document.getElementById("search-input").value;
+    loadProducts();
+  });
+
+  loadCategories();
+  loadProducts();
+</script>
+</body>
+</html>

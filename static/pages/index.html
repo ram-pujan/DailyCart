@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Daily Cart — Play More. Perform Better.</title>
+<link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="logo" href="/">Daily<span>Cart</span></a>
+    <nav class="nav-links">
+      <a href="/shop">Shop</a>
+      <a href="/shop?category=cricket">Cricket</a>
+      <a href="/shop?category=football">Football</a>
+      <a href="/shop?category=badminton">Badminton</a>
+      <a href="/shop?category=fitness">Fitness</a>
+    </nav>
+    <div class="search-box">
+      <form action="/shop" method="GET"><input type="text" name="q" placeholder="Search cricket bat, football..." /></form>
+    </div>
+    <a class="cart-link" href="/cart">Cart <span class="badge-count" id="cart-count">0</span></a>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <div>
+      <h1>Play more.<br /><span class="accent">Perform better.</span></h1>
+      <p>Daily Cart brings genuine sports gear — cricket, football, badminton and fitness — to your door anywhere in Nepal. Cash on delivery, no hassle.</p>
+      <a class="btn btn-primary" href="/shop">Shop Now</a>
+    </div>
+    <div class="hero-panel">
+      <div class="eyebrow">Today on Daily Cart</div>
+      <div class="ticker" id="ticker">
+        <div class="ticker-row"><span>Loading best sellers…</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section wrap">
+  <div class="section-head"><h2>Shop by category</h2></div>
+  <div class="cat-grid" id="cat-grid"></div>
+</section>
+
+<section class="section wrap">
+  <div class="section-head">
+    <h2>Best sellers</h2>
+    <a href="/shop?sort=popular">View all</a>
+  </div>
+  <div class="product-grid" id="best-sellers"></div>
+</section>
+
+<section class="section wrap">
+  <div class="section-head"><h2>Why Daily Cart?</h2></div>
+  <div class="cat-grid">
+    <div class="cat-card"><div class="icon">🚚</div><div class="name">Cash on delivery</div></div>
+    <div class="cat-card"><div class="icon">✅</div><div class="name">Genuine brands</div></div>
+    <div class="cat-card"><div class="icon">🔁</div><div class="name">Easy returns</div></div>
+    <div class="cat-card"><div class="icon">📦</div><div class="name">Nationwide delivery</div></div>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <strong>Daily Cart</strong> — Sports gear, delivered across Nepal.<br />
+    Prototype build — order tracking, admin dashboard and COD checkout are fully wired to a local database.
+  </div>
+</footer>
+
+<script src="/static/js/app.js"></script>
+<script>
+  function productCard(p) {
+    const onSale = p.sale_price && p.sale_price < p.price;
+    return `
+      <div class="product-card">
+        <a href="/product?slug=${p.slug}"><div class="product-thumb">${p.icon}</div></a>
+        <div class="product-body">
+          <div class="product-cat">${p.category_name}</div>
+          <a href="/product?slug=${p.slug}"><div class="product-name">${DC.escapeHtml(p.name)}</div></a>
+          <div class="product-rating">★ ${p.rating.toFixed(1)}</div>
+          <div class="price-row">
+            <span class="price">${DC.money(p.sale_price || p.price)}</span>
+            ${onSale ? `<span class="price-strike">${DC.money(p.price)}</span>` : ""}
+          </div>
+          ${p.stock <= p.low_stock_threshold && p.stock > 0 ? `<span class="stock-flag low">Only ${p.stock} left</span>` : ""}
+          ${p.stock === 0 ? `<span class="stock-flag low">Out of stock</span>` : ""}
+          <button class="btn btn-primary btn-sm" ${p.stock === 0 ? "disabled" : ""} onclick='DC.addToCart(${JSON.stringify(p)}); DC.toast("Added to cart")'>Add to Cart</button>
+        </div>
+      </div>`;
+  }
+
+  (async function init() {
+    const [cats, products] = await Promise.all([
+      DC.api("/api/categories"),
+      DC.api("/api/products?sort=popular"),
+    ]);
+
+    document.getElementById("cat-grid").innerHTML = cats.map(c => `
+      <a class="cat-card" href="/shop?category=${c.slug}">
+        <div class="icon">${c.icon}</div>
+        <div class="name">${c.name}</div>
+      </a>`).join("");
+
+    document.getElementById("best-sellers").innerHTML = products.slice(0, 8).map(productCard).join("");
+
+    document.getElementById("ticker").innerHTML = products.slice(0, 4).map((p, i) => `
+      <div class="ticker-row"><span>${p.icon} ${DC.escapeHtml(p.name)}</span><span class="n">${DC.money(p.sale_price || p.price)}</span></div>
+    `).join("");
+  })();
+</script>
+</body>
+</html>
